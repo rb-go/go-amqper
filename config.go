@@ -9,32 +9,30 @@ import (
 
 // Configuration is basic configureation for worker
 type Configuration struct {
+	AsyncWorker           bool
 	ConnectionString      string
 	ConnectionConfig      amqp.Config
 	ExchangeName          string
 	QueueName             string
+	QueueDurable          bool
+	QueueArguments        map[string]interface{}
 	QueueAutoDelete       bool
 	QueueExclusive        bool
 	QueueNoWait           bool
 	QueueAutoACK          bool
 	PrefetchCount         int
 	UseDelayedQueue       bool
-	AsyncWorker           bool
+	DelayedQueueArguments map[string]interface{}
 	DefaultRetryCount     int32
 	DefaultRetryDelay     int64
-	QueueDurable          bool
-	Heartbeat             time.Duration
-	Locale                string
-	QueueArguments        map[string]interface{}
-	DelayedQueueArguments map[string]interface{}
 }
 
 // SendPushFunction type that define function that used to send push
-type ProcessFunction func(amqpMSG *amqp.Delivery) (retryCnt *int32, retryDelay *int64, err error)
+type ProcessFunction func(amqpMSG *amqp.Delivery) (retryCnt int32, retryDelay int64, err error)
 
 // Worker basic client
 type Worker struct {
-	config                    *Configuration
+	config                    Configuration
 	logger                    golif.Logger
 	amqpConnection            *amqp.Connection
 	amqpChannel               *amqp.Channel
