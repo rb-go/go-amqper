@@ -32,7 +32,7 @@ type ProcessFunction func(amqpMSG *amqp.Delivery) (retryCnt int32, retryDelay in
 
 // Worker basic client
 type Worker struct {
-	config                    Configuration
+	config                    *Configuration
 	logger                    golif.Logger
 	amqpConnection            *amqp.Connection
 	amqpChannel               *amqp.Channel
