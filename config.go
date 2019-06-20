@@ -1,8 +1,6 @@
 package workercore
 
 import (
-	"time"
-
 	"github.com/riftbit/golif"
 	"github.com/streadway/amqp"
 )
