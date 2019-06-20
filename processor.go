@@ -9,7 +9,7 @@ import (
 
 func (wrk *Worker) processMessage(amqpMSG *amqp.Delivery) {
 
-	retryCnt, retryDelay, err := wrk.processFunction(amqpMSG)
+	retryCnt, retryDelay, err := wrk.processFunction(wrk.externalService, amqpMSG)
 
 	if err != nil {
 
