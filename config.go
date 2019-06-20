@@ -25,8 +25,9 @@ type Configuration struct {
 	DefaultRetryDelay     int64
 }
 
-// SendPushFunction type that define function that used to send push
-type ProcessFunction func(amqpMSG *amqp.Delivery) (retryCnt int32, retryDelay int64, err error)
+// ProcessFunction 
+// service field needs to pass application data, services, configs, etc.
+type ProcessFunction func(service interface{}, amqpMSG *amqp.Delivery) (retryCnt int32, retryDelay int64, err error)
 
 // Worker basic client
 type Worker struct {
