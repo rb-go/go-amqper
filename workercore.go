@@ -8,7 +8,7 @@ import (
 )
 
 // NewWorker returns main worker base
-func NewWorker(config *Configuration, logger golif.Logger) *Worker {
+func NewWorker(externalServiceParams interface{}, config *Configuration, logger golif.Logger) *Worker {
 	if config.QueueArguments == nil {
 		config.QueueArguments = make(map[string]interface{})
 	}
@@ -16,8 +16,9 @@ func NewWorker(config *Configuration, logger golif.Logger) *Worker {
 		config.QueueArguments = make(map[string]interface{})
 	}
 	wrk := &Worker{
-		config: config,
-		logger: logger,
+		externalService: externalServiceParams,
+		config:          config,
+		logger:          logger,
 	}
 	wrk.amqpQueueDelayedName = fmt.Sprintf("%s-delayed", config.QueueName)
 	return wrk
