@@ -42,4 +42,5 @@ type Worker struct {
 	amqpQueueDelayedName      string
 	shutdownCh                chan bool
 	processFunction           ProcessFunction
+	externalService           interface{}
 }
