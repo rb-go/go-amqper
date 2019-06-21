@@ -79,9 +79,9 @@ func (wrk *Worker) processMessage(amqpMSG *amqp.Delivery) {
 	}
 }
 
-func (wrk *Worker) repubToDelayed(amqpMSG *amqp.Delivery, retryID int32, delay int64) error {
+func (wrk *Worker) repubToDelayed(amqpMSG *amqp.Delivery, retryID int32, delay time.Duration) error {
 
-	wrk.logger.Debugf("republishing to %s with delay %dms and retry-id %d", wrk.amqpQueueDelayedName, delay, retryID)
+	wrk.logger.Debugf("republishing to %s with delay %dms and retry-id %d", wrk.amqpQueueDelayedName, delay.Nanoseconds()/1e6, retryID)
 
 	return wrk.amqpChannel.Publish("", wrk.amqpQueueDelayedName, false, false, amqp.Publishing{
 		Headers:         amqpMSG.Headers,
@@ -91,7 +91,7 @@ func (wrk *Worker) repubToDelayed(amqpMSG *amqp.Delivery, retryID int32, delay i
 		Priority:        amqpMSG.Priority,
 		CorrelationId:   amqpMSG.CorrelationId,
 		ReplyTo:         amqpMSG.ReplyTo,
-		Expiration:      fmt.Sprintf("%d", delay),
+		Expiration:      fmt.Sprintf("%d", delay.Nanoseconds()/1e6),
 		MessageId:       amqpMSG.MessageId,
 		Timestamp:       time.Now(),
 		Type:            amqpMSG.Type,
