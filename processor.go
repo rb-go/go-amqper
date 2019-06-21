@@ -44,7 +44,7 @@ func (wrk *Worker) processMessage(amqpMSG *amqp.Delivery) {
 
 				if currentTryId < repeatCnt {
 
-					var delay int64
+					var delay time.Duration
 
 					if retryDelay != 0 {
 						delay = retryDelay
