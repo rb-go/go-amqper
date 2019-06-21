@@ -13,7 +13,7 @@ Golang package for easy creation of amqp workers with resend if error ability
 ## Installation
 
 ```
-go get -u github.com/riftbit/go-svapi
+go get -u github.com/riftbit/go-workercore
 ```
 
 ## Usage
