@@ -1,6 +1,8 @@
 package workercore
 
 import (
+	"time"
+	
 	"github.com/riftbit/golif"
 	"github.com/streadway/amqp"
 )
@@ -8,6 +10,7 @@ import (
 // Configuration is basic configureation for worker
 type Configuration struct {
 	AsyncWorker           bool
+	AsyncPoolSize           int32
 	ConnectionString      string
 	ConnectionConfig      amqp.Config
 	ExchangeName          string
@@ -22,12 +25,12 @@ type Configuration struct {
 	UseDelayedQueue       bool
 	DelayedQueueArguments map[string]interface{}
 	DefaultRetryCount     int32
-	DefaultRetryDelay     int64
+	DefaultRetryDelay     time.Duration
 }
 
 // ProcessFunction 
 // service field needs to pass application data, services, configs, etc.
-type ProcessFunction func(service interface{}, amqpMSG *amqp.Delivery) (retryCnt int32, retryDelay int64, err error)
+type ProcessFunction func(service interface{}, amqpMSG *amqp.Delivery) (retryCnt int32, retryDelay time.Duration, err error)
 
 // Worker basic client
 type Worker struct {
