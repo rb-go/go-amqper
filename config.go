@@ -10,7 +10,7 @@ import (
 // Configuration is basic configureation for worker
 type Configuration struct {
 	AsyncWorker           bool
-	AsyncPoolSize           int32
+	AsyncPoolSize         int32
 	ConnectionString      string
 	ConnectionConfig      amqp.Config
 	ExchangeName          string
