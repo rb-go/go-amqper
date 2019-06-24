@@ -19,23 +19,22 @@ func (wrk *Worker) processMessage(amqpMSG *amqp.Delivery) {
 			}
 
 			if repeatCnt > 0 {
-				var currentTryId int32
-				var nextTryId int32
+				var currentTryID int32
+				var nextTryID int32
 
 				if amqpMSG.Headers == nil {
 					amqpMSG.Headers = make(map[string]interface{})
 				}
+
 				if n, ok := amqpMSG.Headers["x-retry-id"].(int32); ok {
-					currentTryId = n
-					nextTryId = currentTryId + 1
+					currentTryID = n
+					nextTryID = currentTryID + 1
 				} else {
-					currentTryId = 1
-					nextTryId = currentTryId + 1
+					currentTryID = 1
+					nextTryID = currentTryID + 1
 				}
 
-				amqpMSG.Headers["x-retry-id"] = nextTryId
-
-				if currentTryId < repeatCnt {
+				if currentTryID < repeatCnt {
 
 					var delay time.Duration
 
@@ -45,7 +44,7 @@ func (wrk *Worker) processMessage(amqpMSG *amqp.Delivery) {
 						delay = wrk.config.DefaultRetryDelay
 					}
 
-					err = wrk.repubToDelayed(amqpMSG, nextTryId, delay)
+					err = wrk.repubToDelayed(amqpMSG, nextTryID, delay)
 					if err != nil {
 						wrk.errorCh <- fmt.Errorf("cannot repub with delay: %v", err)
 					}
@@ -68,7 +67,7 @@ func (wrk *Worker) processMessage(amqpMSG *amqp.Delivery) {
 }
 
 func (wrk *Worker) repubToDelayed(amqpMSG *amqp.Delivery, retryID int32, delay time.Duration) error {
-
+	amqpMSG.Headers["x-retry-id"] = retryID
 	return wrk.amqpChannel.Publish("", wrk.amqpQueueDelayedName, false, false, amqp.Publishing{
 		Headers:         amqpMSG.Headers,
 		ContentType:     amqpMSG.ContentType,
