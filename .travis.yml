@@ -18,11 +18,11 @@ matrix:
   allow_failures:
     - go: tip
 
-#branches:
-#  only:
-#  - master
-#  - develop
-#  - /^v*.*.*$/
+branches:
+  only:
+  - master
+  - develop
+  - /^v*.*.*$/
 
 notifications:
   email:
