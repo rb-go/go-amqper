@@ -1,0 +1,46 @@
+language: go
+
+#dist: trusty
+#sudo: false
+
+os:
+  - linux
+
+go:
+  - 1.11.x
+  - 1.12.x
+  - tip
+
+env:
+  - GO111MODULE=on
+
+matrix:
+  allow_failures:
+    - go: tip
+
+#branches:
+#  only:
+#  - master
+#  - develop
+#  - /^v*.*.*$/
+
+notifications:
+  email:
+    on_success: change
+    on_failure: always
+
+install:
+  - go get -d
+  - go get -u golang.org/x/lint/golint
+  - go get -u golang.org/x/tools/cmd/goimports
+  - go get -u golang.org/x/tools/cmd/cover
+  - go get -u github.com/mattn/goveralls
+
+before_script:
+
+script:
+  - go vet ./...
+  - diff <(goimports -d .) <(printf "")
+  - diff <(golint ./...) <(printf "")
+  - go test -v -covermode=count -coverprofile=coverage.out
+  - goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN

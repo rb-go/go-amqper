@@ -3,32 +3,46 @@ package workercore
 import (
 	"fmt"
 
-	"github.com/riftbit/golif"
 	"github.com/streadway/amqp"
 )
 
 // NewWorker returns main worker base
-func NewWorker(externalServiceParams interface{}, config *Configuration, logger golif.Logger) *Worker {
+func NewWorker(config *Configuration, processor RunnableConsumer) (*Worker, chan error) {
 	if config.QueueArguments == nil {
 		config.QueueArguments = make(map[string]interface{})
 	}
 	if config.DelayedQueueArguments == nil {
 		config.QueueArguments = make(map[string]interface{})
 	}
-	wrk := &Worker{
-		externalService: externalServiceParams,
-		config:          config,
-		logger:          logger,
-	}
-	wrk.amqpQueueDelayedName = fmt.Sprintf("%s-delayed", config.QueueName)
-	return wrk
-}
 
-// Initialize inits worker connections and setup processing methods
-func (wrk *Worker) Initialize(processFunction ProcessFunction) error {
-	wrk.processFunction = processFunction
+	wrk := &Worker{
+		processorStorage: processor,
+		config:           config,
+	}
 
 	wrk.shutdownCh = make(chan bool, 1)
+	wrk.errorCh = make(chan error)
+
+	if wrk.config.AsyncWorker {
+
+		if wrk.config.AsyncPoolSize == 0 {
+			wrk.config.AsyncPoolSize = defaultAsyncPoolSize
+		}
+
+		wrk.amqpMessagesPoolCh = make(chan *amqp.Delivery, config.AsyncPoolSize)
+
+		wrk.runnerForProcessor = wrk.processorRunnerAsync
+	} else {
+		wrk.runnerForProcessor = wrk.processorRunnerSync
+	}
+
+	wrk.amqpQueueDelayedName = fmt.Sprintf("%s-delayed", config.QueueName)
+
+	return wrk, wrk.errorCh
+}
+
+// Serve start worker processing messages
+func (wrk *Worker) Serve() error {
 
 	var err error
 	err = wrk.initAmqpConnection()
@@ -64,12 +78,6 @@ func (wrk *Worker) Initialize(processFunction ProcessFunction) error {
 		return err
 	}
 
-	return nil
-}
-
-// Serve start worker processing msgs
-func (wrk *Worker) Serve() error {
-
 	for { // worker loop
 		select {
 		case err := <-wrk.amqpNotifyCloseConnection:
@@ -77,40 +85,36 @@ func (wrk *Worker) Serve() error {
 			return wrk.errorStop(err)
 		case msg := <-wrk.amqpMessages:
 			// work with message
-			// wrk.logger.Printf("message received from rabbit %s with delivery tag %d", msg.ConsumerTag, msg.DeliveryTag)
-			if wrk.config.AsyncWorker {
-				go wrk.processMessage(&msg)
-			} else {
-				wrk.processMessage(&msg)
-			}
-		case <-wrk.shutdownCh:
+			wrk.runnerForProcessor(&msg)
+		case msg := <-wrk.amqpMessagesPoolCh:
+			// work if async mode with pool
+			wrk.processMessage(msg)
+			// case <-wrk.shutdownCh:
 			// work with graceful stop
-			wrk.graceStop()
+			// wrk.graceStop()
 		}
 	}
 }
 
-func (wrk *Worker) Close() {
-	wrk.shutdownCh <- true
+// Close is for graceful serve stop
+func (wrk *Worker) Close() error {
+	// wrk.shutdownCh <- true
+	return wrk.graceStop()
 }
 
-func (wrk *Worker) graceStop() {
-	wrk.logger.Infof("shutdown signal received")
-
+func (wrk *Worker) graceStop() error {
 	if err := wrk.amqpChannel.Close(); err != nil {
-		wrk.logger.Fatalf("error with graceful close channel: %s", err)
+		return fmt.Errorf("error with graceful close channel: %s", err)
 	}
 	if err := wrk.amqpConnection.Close(); err != nil {
-		wrk.logger.Fatalf("error with graceful close connection: %s", err)
+		return fmt.Errorf("error with graceful close connection: %s", err)
 	}
-
-	wrk.logger.Println("server stopped")
+	return nil
 }
 
 func (wrk *Worker) errorStop(err error) error {
 	if err != nil {
-		wrk.logger.Fatalf("lost connection with rabbitmq: %v", err)
-		return err
+		return fmt.Errorf("lost connection with AMQP: %v", err)
 	}
 	return nil
 }
@@ -119,35 +123,35 @@ func (wrk *Worker) initAmqpConnection() error {
 	var err error
 
 	wrk.amqpConnection, err = amqp.DialConfig(wrk.config.ConnectionString, wrk.config.ConnectionConfig)
-
 	if err != nil {
-		return fmt.Errorf("%s: %s", "failed to connect to RabbitMQ", err)
+		return fmt.Errorf("%s: %s", "failed to connect to AMQP", err)
 	}
-
 	wrk.amqpNotifyCloseConnection = wrk.amqpConnection.NotifyClose(make(chan *amqp.Error))
-
-	wrk.logger.Printf("success connection to %s", wrk.config.ConnectionString)
 	return nil
 }
 
 func (wrk *Worker) initAmqpChannel() error {
 	var err error
 	wrk.amqpChannel, err = wrk.amqpConnection.Channel()
-
 	if err != nil {
 		return fmt.Errorf("%s: %s", "failed to open a channel", err)
 	}
+	return nil
+}
 
-	wrk.logger.Printf("success opening a channel")
+func (wrk *Worker) initChannelQos() error {
+	var err error
+	err = wrk.amqpChannel.Qos(wrk.config.PrefetchCount, 0, false)
+	if err != nil {
+		return fmt.Errorf("%s: %s", "failed to set channel QoS", err)
+	}
 	return nil
 }
 
 func (wrk *Worker) initDelayedQueue() error {
 	var err error
-
 	wrk.config.DelayedQueueArguments["x-dead-letter-exchange"] = ""
 	wrk.config.DelayedQueueArguments["x-dead-letter-routing-key"] = wrk.config.QueueName
-
 	wrk.amqpQueueDelayed, err = wrk.amqpChannel.QueueDeclare(
 		wrk.amqpQueueDelayedName,         // name
 		wrk.config.QueueDurable,          // durable
@@ -156,24 +160,9 @@ func (wrk *Worker) initDelayedQueue() error {
 		false,                            // no-wait
 		wrk.config.DelayedQueueArguments, // arguments
 	)
-
 	if err != nil {
 		return fmt.Errorf("%s: %s", "failed to declare a delayed queue", err)
 	}
-
-	wrk.logger.Printf("success delayed queue declaration: %s", wrk.amqpQueueDelayedName)
-	return nil
-}
-
-func (wrk *Worker) initChannelQos() error {
-	var err error
-	err = wrk.amqpChannel.Qos(wrk.config.PrefetchCount, 0, false)
-
-	if err != nil {
-		return fmt.Errorf("%s: %s", "failed to set QoS", err)
-	}
-
-	wrk.logger.Printf("setup QOS success")
 	return nil
 }
 
@@ -187,12 +176,9 @@ func (wrk *Worker) initQueue() error {
 		wrk.config.QueueNoWait,     // no-wait
 		wrk.config.QueueArguments,  // arguments
 	)
-
 	if err != nil {
 		return fmt.Errorf("%s: %s", "failed to declare a queue", err)
 	}
-
-	wrk.logger.Printf("success queue declaration: %s", wrk.config.QueueName)
 	return nil
 }
 
@@ -207,11 +193,8 @@ func (wrk *Worker) initConsumer() error {
 		wrk.config.QueueNoWait,    // no-wait
 		nil,                       // args
 	)
-
 	if err != nil {
-		return fmt.Errorf("%s: %s", "failed to declare a queue", err)
+		return fmt.Errorf("%s: %s", "failed to init consume", err)
 	}
-
-	wrk.logger.Printf("success consumer declaration: %s", wrk.amqpQueue.Name)
 	return nil
 }
