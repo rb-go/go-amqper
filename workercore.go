@@ -150,6 +150,9 @@ func (wrk *Worker) initChannelQos() error {
 
 func (wrk *Worker) initDelayedQueue() error {
 	var err error
+	if wrk.config.DelayedQueueArguments == nil {
+		wrk.config.DelayedQueueArguments = make(map[string]interface{})
+	}
 	wrk.config.DelayedQueueArguments["x-dead-letter-exchange"] = ""
 	wrk.config.DelayedQueueArguments["x-dead-letter-routing-key"] = wrk.config.QueueName
 	wrk.amqpQueueDelayed, err = wrk.amqpChannel.QueueDeclare(

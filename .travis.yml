@@ -31,6 +31,7 @@ notifications:
 
 install:
   - go get -d
+  - go get -t -v
   - go get -u golang.org/x/lint/golint
   - go get -u golang.org/x/tools/cmd/goimports
   - go get -u golang.org/x/tools/cmd/cover
