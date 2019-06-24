@@ -62,7 +62,7 @@ func (wrk *Worker) processMessage(amqpMSG *amqp.Delivery) {
 
 	err = amqpMSG.Ack(false)
 	if err != nil {
-		wrk.errorCh <- fmt.Errorf("cannot send Ack for delivery tag $d: %v", amqpMSG.DeliveryTag, err)
+		wrk.errorCh <- fmt.Errorf("cannot send Ack for delivery tag %d: %v", amqpMSG.DeliveryTag, err)
 		return
 	}
 }
