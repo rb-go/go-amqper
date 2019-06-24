@@ -17,6 +17,7 @@ env:
 matrix:
   allow_failures:
     - go: tip
+    - branch: develop
 
 branches:
   only:
