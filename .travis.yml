@@ -43,4 +43,4 @@ script:
   - diff <(goimports -d .) <(printf "")
   - diff <(golint ./...) <(printf "")
   - go test -v -covermode=count -coverprofile=coverage.out
-  - goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN
+#  - goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN
