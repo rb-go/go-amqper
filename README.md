@@ -1,7 +1,9 @@
 # amqper
 Golang package for easy creation of AMQP workers with `resend if error` ability
 
-[Website](https://riftbit.com) | [Contributing](https://riftbit.com/How-to-Contribute)
+Developed by \[riftbit\] ErgoZ ![GitHub followers](https://img.shields.io/github/followers/ergoz?label=Follow&style=social)
+
+[Website](https://riftbit.com) | [Contributing](https://riftbit.com/How-to-Contribute) | ![GitHub followers](https://img.shields.io/github/followers/riftbit?label=Follow&style=social)
 
 [![license](https://img.shields.io/github/license/rb-pkg/amqper.svg)](LICENSE)
 [![GoDoc](http://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](https://godoc.org/github.com/rb-pkg/amqper)
