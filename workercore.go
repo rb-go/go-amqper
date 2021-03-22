@@ -88,7 +88,7 @@ func (wrk *Worker) Serve() error {
 			wrk.runnerForProcessor(&msg)
 		case msg := <-wrk.amqpMessagesPoolCh:
 			// work if async mode with pool
-			wrk.processMessage(msg)
+			go wrk.processMessage(msg)
 			// case <-wrk.shutdownCh:
 			// work with graceful stop
 			// wrk.graceStop()
