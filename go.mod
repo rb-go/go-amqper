@@ -1,4 +1,6 @@
-module github.com/riftbit/go-workercore
+module github.com/rb-pkg/amqper
+
+go 1.15
 
 go 1.16
 

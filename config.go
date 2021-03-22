@@ -1,4 +1,4 @@
-package workercore
+package amqper
 
 import (
 	"time"

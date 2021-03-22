@@ -9,6 +9,9 @@ os:
 go:
   - 1.11.x
   - 1.12.x
+  - 1.13.x
+  - 1.14.x
+  - 1.15.x
   - tip
 
 env:
@@ -32,6 +35,7 @@ notifications:
 
 install:
   - go get -d
+  - go get -t -v
   - go get -u golang.org/x/lint/golint
   - go get -u golang.org/x/tools/cmd/goimports
   - go get -u golang.org/x/tools/cmd/cover
