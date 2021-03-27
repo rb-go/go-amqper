@@ -3,7 +3,7 @@ package amqper
 import (
 	"time"
 
-	"github.com/streadway/amqp"
+	"github.com/rb-pkg/amqp"
 )
 
 const (
@@ -18,6 +18,7 @@ type Configuration struct {
 	ConnectionConfig      amqp.Config
 	ExchangeName          string
 	QueueName             string
+	ConsumerName          string
 	QueueDurable          bool
 	QueueArguments        map[string]interface{}
 	QueueAutoDelete       bool

@@ -2,4 +2,4 @@ module github.com/rb-pkg/amqper
 
 go 1.15
 
-require github.com/streadway/amqp v1.0.0
+require github.com/rb-pkg/amqp v1.1.0
