@@ -2,9 +2,10 @@ package amqper
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
-	"github.com/streadway/amqp"
+	"github.com/rb-pkg/amqp"
 )
 
 func (wrk *Worker) processMessage(amqpMSG *amqp.Delivery) {
@@ -68,20 +69,24 @@ func (wrk *Worker) processMessage(amqpMSG *amqp.Delivery) {
 
 func (wrk *Worker) repubToDelayed(amqpMSG *amqp.Delivery, retryID int32, delay time.Duration) error {
 	amqpMSG.Headers["x-retry-id"] = retryID
-	return wrk.amqpChannel.Publish("", wrk.amqpQueueDelayedName, false, false, amqp.Publishing{
-		Headers:         amqpMSG.Headers,
-		ContentType:     amqpMSG.ContentType,
-		ContentEncoding: amqpMSG.ContentEncoding,
-		DeliveryMode:    amqpMSG.DeliveryMode,
-		Priority:        amqpMSG.Priority,
-		CorrelationId:   amqpMSG.CorrelationId,
-		ReplyTo:         amqpMSG.ReplyTo,
-		Expiration:      fmt.Sprintf("%d", int64(delay/time.Millisecond)),
-		MessageId:       amqpMSG.MessageId,
-		Timestamp:       time.Now(),
-		Type:            amqpMSG.Type,
-		UserId:          amqpMSG.UserId,
-		AppId:           amqpMSG.AppId,
-		Body:            amqpMSG.Body,
-	})
+
+	pub := amqp.AcquirePublishing()
+	defer amqp.ReleasePublishing(pub)
+
+	pub.Headers = amqpMSG.Headers
+	pub.ContentType = amqpMSG.ContentType
+	pub.ContentEncoding = amqpMSG.ContentEncoding
+	pub.DeliveryMode = amqpMSG.DeliveryMode
+	pub.Priority = amqpMSG.Priority
+	pub.CorrelationId = amqpMSG.CorrelationId
+	pub.ReplyTo = amqpMSG.ReplyTo
+	pub.Expiration = strconv.FormatInt(int64(delay/time.Millisecond), 10)
+	pub.MessageId = amqpMSG.MessageId
+	pub.Timestamp = time.Now()
+	pub.Type = amqpMSG.Type
+	pub.UserId = amqpMSG.UserId
+	pub.AppId = amqpMSG.AppId
+	pub.Body = amqpMSG.Body
+
+	return wrk.amqpChannel.Publish("", wrk.amqpQueueDelayedName, false, false, pub)
 }

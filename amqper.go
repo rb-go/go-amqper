@@ -3,7 +3,7 @@ package amqper
 import (
 	"fmt"
 
-	"github.com/streadway/amqp"
+	"github.com/rb-pkg/amqp"
 )
 
 // NewWorker returns main worker base
@@ -189,7 +189,7 @@ func (wrk *Worker) initConsumer() error {
 	var err error
 	wrk.amqpMessages, err = wrk.amqpChannel.Consume(
 		wrk.config.QueueName,      // queue
-		"",                        // consumer
+		wrk.config.ConsumerName,   // consumer
 		wrk.config.QueueAutoACK,   // auto-ack
 		wrk.config.QueueExclusive, // exclusive
 		false,                     // no-local

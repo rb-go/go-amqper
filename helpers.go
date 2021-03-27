@@ -1,7 +1,7 @@
 package amqper
 
 import (
-	"github.com/streadway/amqp"
+	"github.com/rb-pkg/amqp"
 )
 
 func (wrk *Worker) processorRunnerAsync(msg *amqp.Delivery) {
